@@ -1,0 +1,5 @@
+node:
+  hostAliases:
+    "fs-014f9027b5534dcb6":
+      ip: 172.31.3.21
+      region: us-west-1
