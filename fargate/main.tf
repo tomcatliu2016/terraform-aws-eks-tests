@@ -26,9 +26,9 @@ module "fargate_profile_existing_cluster" {
     default = {
       name = "default"
       selectors = [
-        //{
-        //  namespace = "kube-system"          
-        //},
+        {
+          namespace = "kube-system"
+        },
         {
           namespace = "default"
         }
@@ -42,17 +42,13 @@ module "fargate_profile_existing_cluster" {
       name = "game-2048"
       selectors = [
         {
-          namespace = "game-2048"          
+          namespace = "game-2048"
         }
       ]
-    },
-	gpmt = {
-      name = "gpmt"
-      selectors = [
-        {
-          namespace = "gpmt-zh-gen"
-        }
-      ]
+
+      tags = {
+        Owner = "game"
+      }
     }
   }
 }

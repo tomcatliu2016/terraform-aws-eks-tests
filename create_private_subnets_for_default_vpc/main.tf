@@ -1,7 +1,8 @@
 
 locals {
   region       = "us-west-1"
-  environment  = "default"  
+  environment  = "default"
+  cluster_name = "test-eks"
   cidr_block   = [for k, v in data.aws_availability_zones.available.names:
                   cidrsubnet(data.aws_vpc.default.cidr_block, 4, k +length(data.aws_availability_zones.available.names))]
 }
@@ -25,16 +26,6 @@ data "aws_subnet_ids" "public" {
   }
 }
 
-output "test" {
-  description = "Name of EKS Cluster used in tags for subnets"
-  value       = {
-    cidr_block              = [for k, v in data.aws_availability_zones.available.names:
-                              cidrsubnet(data.aws_vpc.default.cidr_block, 4, k +length(data.aws_availability_zones.available.names))]
-    availability_zone       = data.aws_availability_zones.available.names
-  }
-}
-
-
 resource "aws_subnet" "private_subnet" {
   vpc_id                  = data.aws_vpc.default.id
   count                   = length(data.aws_availability_zones.available.names)
@@ -44,6 +35,8 @@ resource "aws_subnet" "private_subnet" {
   tags = {
     Name        = "${local.environment}-${element(data.aws_availability_zones.available.names, count.index)}-private-subnet"
     Environment = local.environment
+    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
+    "kubernetes.io/role/internal-elb"             = "1"
 	Tier = "Private"
   }
 }
@@ -57,7 +50,7 @@ resource "aws_route_table" "private" {
 }
 
 resource "aws_route_table_association" "private" {
-  count          = length(data.aws_availability_zones.available.names)
+  count          = length(aws_subnet.private_subnet)
   subnet_id      = element(aws_subnet.private_subnet.*.id, count.index)
   route_table_id = aws_route_table.private.id
 }
@@ -67,4 +60,24 @@ resource "aws_ec2_tag" "subnet_tag" {
   resource_id = element(tolist(data.aws_subnet_ids.public.ids), count.index)
   key         = "Tier"
   value       = "Public"
+}
+
+
+resource "aws_eip" "nat_eip" {
+  vpc        = true
+}
+
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat_eip.id
+  subnet_id     = tolist(data.aws_subnet_ids.public.ids)[0]
+  tags = {
+    Name        = "nat"
+    Environment = local.environment
+  }
+}
+
+resource "aws_route" "private_nat_gateway" {
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat.id
 }

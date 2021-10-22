@@ -4,7 +4,8 @@ provider "aws" {
 
 locals {
   region   = "us-west-1"
-  vpc_cidr = "10.31.0.0/16"  
+  vpc_cidr = "10.31.0.0/16"
+  cluster_name = "test-eks"
 }
 
 data "aws_availability_zones" "available" {}

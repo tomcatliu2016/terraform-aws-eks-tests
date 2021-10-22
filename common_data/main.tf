@@ -9,7 +9,7 @@ data "terraform_remote_state" "vpc" {
 locals {
   region       = data.terraform_remote_state.vpc.outputs.region  
   vpc          = data.terraform_remote_state.vpc.outputs.vpc
-  cluster_name = "test-eks"
+  cluster_name = data.terraform_remote_state.vpc.outputs.cluster_name
 }
 
 provider "aws" {
